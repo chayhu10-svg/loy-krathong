@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="th"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ลอยกระทงกับแฟน 🌕</title>
+<link href="https://fonts.googleapis.com/css2?family=Mali:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#10163a;--card:#fff7e8;--ink:#4a2c5a;--pk:#ff7eb6;--gd:#ffc94d}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);font-family:'Mali','Sarabun',sans-serif;overflow:hidden;touch-action:none}
+canvas{display:block;width:100%;height:100%}
+.card{position:absolute;inset:0;margin:auto;width:min(92vw,380px);height:fit-content;max-height:92%;overflow:auto;background:var(--card);color:var(--ink);border-radius:24px;padding:18px;text-align:center;box-shadow:0 8px 0 #e0a84a,0 18px 40px #0008;z-index:5}
+.card h1{margin:0 0 8px;font-size:24px}.card h3{margin:10px 0 6px;font-size:15px}
+.row{display:flex;gap:8px;justify-content:center}
+.opt,button.go{font-family:inherit;border:3px solid #f0c9a0;background:#fff;border-radius:16px;padding:8px 14px;font-size:16px;color:var(--ink);cursor:pointer}
+.opt.on{background:var(--pk);border-color:#d44f8e;color:#fff}
+input{font-family:inherit;width:100%;padding:9px;border-radius:12px;border:3px solid #f0c9a0;font-size:16px;text-align:center;margin:3px 0}
+button.go{background:var(--gd);border-color:#e0a84a;font-weight:700;margin-top:12px;font-size:18px;width:100%}
+#hud{position:absolute;top:calc(8px + env(safe-area-inset-top,0px));left:8px;right:8px;display:none;z-index:3}
+#quest{background:#fff7e8ee;color:var(--ink);border-radius:16px;padding:8px 12px;font-size:14px;text-align:center;box-shadow:0 4px 0 #e0a84a}
+#act:active{transform:translateX(-50%) translateY(5px)!important}
+#act{white-space:nowrap;position:absolute;left:50%;transform:translateX(-50%);bottom:calc(175px + env(safe-area-inset-bottom,0px));display:none;z-index:4;width:auto;padding:12px 18px;margin:0}
+#pad{position:absolute;left:50%;margin-left:-65px;bottom:calc(30px + env(safe-area-inset-bottom,0px));width:130px;height:130px;border-radius:50%;background:#ffffff22;border:3px solid #ffffff55;display:none;z-index:3}
+#knob{position:absolute;left:40px;top:40px;width:50px;height:50px;border-radius:50%;background:#ffffffaa}
+.heart{position:absolute;bottom:30%;font-size:28px;animation:up 2.4s ease-out forwards;pointer-events:none;z-index:6}
+@keyframes up{to{transform:translateY(-55vh) scale(1.5);opacity:0}}
+.kr{display:inline-block;margin:4px;padding:8px;border-radius:16px;border:3px solid #f0c9a0;background:#fff;font-size:34px;cursor:pointer}
+.kr small{display:block;font-size:12px;font-family:inherit}
+.card{touch-action:pan-y}
+#setup{top:auto;bottom:calc(10px + env(safe-area-inset-bottom,0px));margin:0 auto;padding:12px;width:min(96vw,440px);background:#fff7e8f2}
+#setup h1{font-size:18px;margin:0 0 4px}#setup h3{margin:4px 0}#setup .opt{padding:6px 12px;font-size:20px}#setup input{font-size:15px}
+.opt{box-shadow:0 5px 0 #d9b48a;transition:transform .1s}.opt:active{transform:translateY(4px);box-shadow:0 1px 0 #d9b48a}.opt.on{box-shadow:0 5px 0 #b83a7a;transform:translateY(-2px)}
+button.go{background:linear-gradient(#ffe07a,#ffbb33);box-shadow:0 6px 0 #d08f1c,0 10px 14px #0004}button.go:active{transform:translateY(5px);box-shadow:0 1px 0 #d08f1c}
+#tools{position:absolute;top:100%;right:0;margin-top:8px;display:flex;gap:8px}#tools .go{width:auto;margin:0;padding:6px 12px;font-size:15px}
+</style></head><body>
+<div id="setup" class="card">
+<h1>🌕 ลอยกระทงกับแฟน 💕</h1>
+<div class="row" style="align-items:flex-start"><div style="flex:1"><h3>ตัวเรา</h3>
+<div class="row" data-t="1"><button class="opt on" data-g="f">👧</button><button class="opt" data-g="m">👦</button></div>
+<input id="n1" placeholder="ชื่อของเรา" maxlength="12"></div>
+<div style="flex:1"><h3>ตัวแฟน</h3>
+<div class="row" data-t="2"><button class="opt" data-g="f">👧</button><button class="opt on" data-g="m">👦</button></div>
+<input id="n2" placeholder="ชื่อแฟน" maxlength="12"></div></div>
+<button class="go" id="start">เริ่มเที่ยวงานลอยกระทง ✨</button>
+</div>
+<div id="hud"><div id="quest"></div><div id="tools"><button class="go" onclick="snap()">📸 เซฟรูป</button><button class="go" onclick="showHist()">📜 กระทงของเรา</button></div></div>
+<div id="pad"><div id="knob"></div></div>
+<button class="go" id="act"></button>
+<div id="modal" class="card" style="display:none"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+window.onerror=(m,s,l)=>{const d=document.createElement('div');d.style.cssText='position:fixed;top:0;left:0;right:0;background:#c00;color:#fff;font:12px monospace;padding:4px;z-index:99';d.textContent=m+' @'+l;document.body.appendChild(d)};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const SK='loykrathong-v1',inScene=new Set(),SY={local:'📱 เก็บไว้ในเครื่องนี้เครื่องเดียว',ok:'🔗 ซิงค์กับแฟนแล้ว',ro:'👀 ดูกระทงได้ แต่ยังบันทึกให้อีกเครื่องเห็นไม่ได้ (ต้องได้สิทธิ์แก้ไข)'};
+let DB={k:[]},dbc=null,sync='local',stayN=0,pic=null,DL=null;
+try{const d=JSON.parse(localStorage.getItem(SK)||'null');if(d&&Array.isArray(d.k))DB.k=d.k.filter(x=>x&&typeof x.w=='string').map(x=>x.id?x:Object.assign({id:'k'+(x.d||0)+'x'},x))}catch(e){}
+function ssave(){try{localStorage.setItem(SK,JSON.stringify({k:DB.k.slice(-100)}))}catch(e){}}
+function saveRec(r){DB.k.push(r);ssave();if(dbc)dbc.doc(r.id).set(r).then(()=>{sync='ok'}).catch(()=>{sync='ro'})}
+const G={1:'f',2:'m'};
+document.querySelectorAll('.row').forEach(r=>r.onclick=e=>{const b=e.target.closest('.opt');if(!b)return;r.querySelectorAll('.opt').forEach(x=>x.classList.remove('on'));b.classList.add('on');G[r.dataset.t]=b.dataset.g;preview()});
+let N1='เรา',N2='แฟน',KC=0xff7eb6,step=0,wish='';
+const KR=[{n:'ชมพูหวาน',c:0xff7eb6,e:'🌸'},{n:'ม่วงฝัน',c:0xb08cff,e:'💜'},{n:'ฟ้าใส',c:0x6fd3ff,e:'🪷'}];
+
+/* scene */
+const R=new THREE.WebGLRenderer({antialias:true});R.setPixelRatio(Math.min(devicePixelRatio,2));
+document.body.insertBefore(R.domElement,document.body.firstChild);
+const sc=new THREE.Scene();{const bg=document.createElement('canvas');bg.width=4;bg.height=256;const bx=bg.getContext('2d'),bgr=bx.createLinearGradient(0,0,0,256);bgr.addColorStop(0,'#04082a');bgr.addColorStop(.55,'#12206b');bgr.addColorStop(1,'#3b2f78');bx.fillStyle=bgr;bx.fillRect(0,0,4,256);sc.background=new THREE.CanvasTexture(bg)}
+sc.fog=new THREE.Fog(0x141a45,30,80);
+const cam=new THREE.PerspectiveCamera(50,1,.1,100);
+const T=c=>new THREE.MeshToonMaterial({color:c});
+const B=c=>new THREE.MeshBasicMaterial({color:c});
+function add(g,m,x,y,z,p){const o=new THREE.Mesh(g,m);o.position.set(x,y,z);(p||sc).add(o);return o}
+sc.add(new THREE.AmbientLight(0x8890d8,.9));
+const dl=new THREE.DirectionalLight(0xfff0d0,.8);dl.position.set(-5,10,6);sc.add(dl);
+[[-8,3,-3],[8,3,-1],[0,2,5]].forEach(p=>{const l=new THREE.PointLight(0xffb060,.9,14);l.position.set(...p);sc.add(l)});
+// ground & water
+add(new THREE.BoxGeometry(44,1,18),T(0x3f9e6a),0,-.5,-7);
+const water=add(new THREE.PlaneGeometry(44,14),new THREE.MeshToonMaterial({color:0x16336e}),0,-.15,9);water.rotation.x=-Math.PI/2;
+add(new THREE.PlaneGeometry(44,5),T(0xe7cf9a),0,.01,.3).rotation.x=-Math.PI/2;
+// moon & stars
+const moon=add(new THREE.SphereGeometry(3,24,16),new THREE.MeshBasicMaterial({color:0xfff3b0,fog:false}),-3,12,-24);
+const sg=new THREE.BufferGeometry(),sp=[];for(let i=0;i<260;i++)sp.push((Math.random()-.5)*90,8+Math.random()*30,-25-Math.random()*10);
+sg.setAttribute('position',new THREE.Float32BufferAttribute(sp,3));sc.add(new THREE.Points(sg,new THREE.PointsMaterial({color:0xffffff,size:.4,fog:false})));
+// temple
+const tp=new THREE.Group();tp.position.set(-8,0,-6);tp.visible=false;sc.add(tp);
+add(new THREE.BoxGeometry(6,.6,5),T(0xe8d9c0),0,.3,0,tp);
+add(new THREE.BoxGeometry(4.4,2.4,3.4),T(0xfff1d6),0,1.8,0,tp);
+const r1=add(new THREE.ConeGeometry(3.8,1.8,4),T(0xd9482b),0,4,0,tp);r1.rotation.y=Math.PI/4;r1.scale.z=.85;
+const r2=add(new THREE.ConeGeometry(2.4,1.6,4),T(0xf5b82e),0,5.2,0,tp);r2.rotation.y=Math.PI/4;
+add(new THREE.ConeGeometry(.18,1.6,8),T(0xffd24a),0,6.6,0,tp);
+add(new THREE.BoxGeometry(1,1.6,.2),T(0x8a4b2a),0,1.4,1.75,tp);
+[-1.8,1.8].forEach(x=>add(new THREE.CylinderGeometry(.22,.22,2.4,10),T(0xd9482b),x,1.8,1.9,tp));
+// shop
+const sh=new THREE.Group();sh.position.set(8,0,-3);sc.add(sh);
+add(new THREE.BoxGeometry(4.5,.9,2),T(0xb9794a),0,.45,0,sh);
+[-2,2].forEach(x=>add(new THREE.CylinderGeometry(.1,.1,3,8),T(0x8a5a30),x,1.5,.8,sh));
+for(let i=0;i<6;i++)add(new THREE.BoxGeometry(.8,.12,2),T(i%2?0xffffff:0xff6b8b),-2+i*.8+.4,3.1-(i%2)*.02,.2,sh).rotation.x=.25;
+for(let i=0;i<4;i++)krat(-1.5+i,.96,0,KR[i%3].c,sh,.6);
+// bridge
+const br=new THREE.Group();sc.add(br);
+for(let i=0;i<15;i++)add(new THREE.BoxGeometry(2.6,.15,.42),T(i%2?0xc08a50:0xa87440),0,.1,2+i*.5,br);
+[-1.25,1.25].forEach(x=>{for(let i=0;i<=5;i++)add(new THREE.CylinderGeometry(.08,.08,.9,8),T(0x7a4a28),x,.55,2+i*1.4,br);
+add(new THREE.BoxGeometry(.1,.1,7),T(0x7a4a28),x,.95,5.5,br)});
+// lamps (floating lanterns)
+const GT=(()=>{const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d'),g=x.createRadialGradient(32,32,0,32,32,32);g.addColorStop(0,'rgba(255,255,255,1)');g.addColorStop(.25,'rgba(255,255,255,.55)');g.addColorStop(1,'rgba(255,255,255,0)');x.fillStyle=g;x.fillRect(0,0,64,64);return new THREE.CanvasTexture(c)})();
+function glow(c,s){const p=new THREE.Sprite(new THREE.SpriteMaterial({map:GT,color:c,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,fog:false}));p.scale.set(s,s,1);return p}
+const mg=glow(0xfff0b0,14);mg.position.copy(moon.position);mg.position.z+=1;sc.add(mg);
+// sky lantern model (paper, tapered, glowing mouth, handwriting)
+const LT=(()=>{const c=document.createElement('canvas');c.width=c.height=256;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,256,256);x.lineWidth=1.5;for(let i=0;i<70;i++){x.strokeStyle=['#2a3a8a','#2a8a4a','#7a2a2a','#222'][i%4];x.beginPath();let px=Math.random()*256,py=30+Math.random()*190;x.moveTo(px,py);for(let j=0;j<5;j++){px+=Math.random()*14-4;py+=Math.random()*10-5;x.lineTo(px,py)}x.stroke()}return new THREE.CanvasTexture(c)})();
+const LG=(()=>{const g=new THREE.LatheGeometry([[.5,-.45],[.47,-.2],[.4,.1],[.3,.4],[.15,.58],[.02,.62]].map(p=>new THREE.Vector2(p[0],p[1])),8);const pa=g.attributes.position,col=[];for(let i=0;i<pa.count;i++){const k=(pa.getY(i)+.45)/1.07;col.push(1,.62+.38*k,.4+.55*k)}g.setAttribute('color',new THREE.Float32BufferAttribute(col,3));return g})();
+function lantern(tint,s){const g=new THREE.Group();g.add(new THREE.Mesh(LG,new THREE.MeshBasicMaterial({map:LT,vertexColors:true,side:THREE.DoubleSide,color:tint})));add(new THREE.CircleGeometry(.46,8),B(0xff9a2a),0,-.44,0,g).rotation.x=Math.PI/2;add(new THREE.ConeGeometry(.09,.3,6),B(0xffe070),0,-.32,0,g);const gl=glow(0xff9040,3.2);gl.position.y=-.1;g.add(gl);g.scale.setScalar(s);return g}
+const lan=[];for(let i=0;i<24;i++){const l=lantern([0xffffff,0xffc4dc,0xffdca8,0xffb8b8][i%4],.7+Math.random()*.9);l.position.set((Math.random()-.5)*40,2+Math.random()*18,-14+Math.random()*18);l.userData.s=.25+Math.random()*.35;l.userData.p=Math.random()*6;sc.add(l);lan.push(l)}
+// Wat Arun style temple
+const tq=new THREE.Group();tq.position.set(-8,0,-6);sc.add(tq);
+add(new THREE.BoxGeometry(6,.6,5),T(0xf3e3c2),0,.3,0,tq);add(new THREE.BoxGeometry(6.6,.3,5.6),T(0xd8c49a),0,.15,0,tq);
+const GM=new THREE.MeshToonMaterial({color:0xffe9a8,emissive:0xc08a14,emissiveIntensity:.8});
+function prang(h,w,x,z){const g=new THREE.Group();g.position.set(x,.6,z);const n=5,hh=h/n;for(let i=0;i<n;i++){const ww=w*(1-i/n*.7);add(new THREE.CylinderGeometry(ww*.8,ww,hh*.92,8),GM,0,hh*i+hh*.46,0,g);add(new THREE.CylinderGeometry(ww*.92,ww*.92,hh*.1,8),T(0xff9f2e),0,hh*i+hh*.95,0,g)}add(new THREE.ConeGeometry(w*.3,h*.35,8),GM,0,h*1.17,0,g);add(new THREE.CylinderGeometry(.03,.03,h*.25,4),B(0xffe080),0,h*1.4,0,g);tq.add(g)}
+prang(5,1.2,0,-.2);[[-2,-1.2],[2,-1.2],[-2,1.2],[2,1.2]].forEach(p=>prang(2.4,.5,p[0],p[1]));
+const tl=new THREE.PointLight(0xffc860,1.4,20);tl.position.set(0,4,3);tq.add(tl);const hg=glow(0x805010,9);hg.position.set(0,3.5,0);tq.add(hg);
+// golden reflection + floating candles on the river
+const rcv=document.createElement('canvas');rcv.width=64;rcv.height=256;{const x=rcv.getContext('2d'),g=x.createLinearGradient(0,0,0,256);g.addColorStop(0,'rgba(255,205,90,.9)');g.addColorStop(1,'rgba(255,170,60,0)');x.fillStyle=g;x.fillRect(0,0,64,256);for(let y=4;y<256;y+=7)x.clearRect(0,y,64,1+Math.random()*3)}
+const refl=add(new THREE.PlaneGeometry(5,12),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(rcv),transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}),-8,-.08,8);refl.rotation.x=-Math.PI/2;
+for(let i=0;i<28;i++){const x=(Math.random()-.5)*36,z=4+Math.random()*11;if(Math.abs(x)<2.4)continue;add(new THREE.SphereGeometry(.09,8,6),B(0xffa030),x,0,z);const q=glow(0xff8a2a,1.1);q.position.set(x,.15,z);sc.add(q)}
+// trees
+for(let i=0;i<7;i++){const x=-18+i*6+(i%2)*2,z=-12+(i%3);add(new THREE.CylinderGeometry(.25,.35,1.6,8),T(0x7a4a28),x,.8,z);add(new THREE.SphereGeometry(1.3,12,10),T(0x2f8a5a),x,2.4,z)}
+
+function krat(x,y,z,c,p,s){const g=new THREE.Group();g.position.set(x,y,z);g.scale.setScalar(s||1);
+add(new THREE.CylinderGeometry(.7,.75,.3,16),T(0x7bc96a),0,0,0,g);
+for(let r=0;r<2;r++)for(let i=0;i<8;i++){const a=i/8*6.28+r*.4,q=add(new THREE.ConeGeometry(.2,.55,6),T(r?0xffffff:c),Math.cos(a)*(.55-r*.2),.3+r*.15,Math.sin(a)*(.55-r*.2),g);q.rotation.z=Math.cos(a)*-.5;q.rotation.x=Math.sin(a)*.5}
+add(new THREE.CylinderGeometry(.05,.05,.5,6),B(0xfff8dc),0,.45,0,g);add(new THREE.SphereGeometry(.09,8,8),B(0xffa020),0,.78,0,g);
+(p||sc).add(g);return g}
+
+function label(t){const c=document.createElement('canvas');c.width=256;c.height=80;const x=c.getContext('2d');x.font='700 40px Mali,sans-serif';const w=x.measureText(t).width+34;x.fillStyle='#fff7e8';x.beginPath();x.roundRect(128-w/2,8,w,60,28);x.fill();x.fillStyle='#4a2c5a';x.textAlign='center';x.fillText(t,128,54);
+const s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),depthTest:false}));s.scale.set(2.2,.7,1);s.position.y=2.7;return s}
+function mk(g,col,name){const o=new THREE.Group(),f=g=='f',skin=0xffd9bd,hair=f?0x5a3020:0x2a2a3a;
+add(new THREE.CylinderGeometry(.35,.5,.8,14),T(col),0,.9,0,o);
+if(f)add(new THREE.CylinderGeometry(.3,.7,.55,14),T(col),0,.55,0,o);
+else[-.17,.17].forEach(x=>add(new THREE.CylinderGeometry(.15,.15,.5,8),T(0x3d4a8a),x,.3,0,o));
+[-.18,.18].forEach(x=>add(new THREE.SphereGeometry(.14,8,8),T(0x555),x,.08,.05,o));
+[-.5,.5].forEach(x=>add(new THREE.SphereGeometry(.13,8,8),T(skin),x,.85,0,o));
+add(new THREE.SphereGeometry(.55,20,16),T(skin),0,1.75,0,o);
+const h=add(new THREE.SphereGeometry(.58,20,12,0,6.29,0,f?1.9:1.5),T(hair),0,1.8,-.03,o);
+if(f)[-.6,.6].forEach(x=>add(new THREE.SphereGeometry(.2,10,10),T(hair),x,1.55,0,o)),add(new THREE.SphereGeometry(.15,8,8),T(0xff5c9a),.4,2.25,.1,o);
+[-.2,.2].forEach(x=>{add(new THREE.SphereGeometry(.07,8,8),T(0x222),x,1.78,.5,o);add(new THREE.SphereGeometry(.09,8,6),T(0xffa0b0),x*1.9,1.62,.44,o).scale.z=.4});
+add(new THREE.SphereGeometry(.05,8,6),T(0xd0505a),0,1.6,.54,o).scale.set(2,1,.5);
+o.add(label(name));return o}
+
+/* game state */
+let me,pa,keys={},jv={x:0,y:0},kr=[],t0=0;
+const zones=[{x:-8,z:-3,r:3.6,t:'🙏 ไหว้พระ'},{x:8,z:-1,r:3.4,t:'🪷 เลือกกระทง'},{x:0,z:8.4,r:1.6,t:'🌕 ลอยกระทง'}];
+const Q=['ไปไหว้พระที่วัด 🛕','ไปเลือกกระทงที่ร้าน 🪷','เดินไปปลายสะพานไม้ เพื่อลอยกระทง 🌉','เดินเล่นต่อได้เลย 💕'];
+let pv=[];
+function preview(){pv.forEach(o=>sc.remove(o));const a=$('n1').value.trim()||'เรา',b=$('n2').value.trim()||'แฟน';
+pv=[mk(G[1],G[1]=='f'?0xff8fb8:0x5aa9ff,a),mk(G[2],G[2]=='f'?0xffb36b:0x7bd88f,b)];pv[0].position.set(-9.1,0,-1.5);pv[1].position.set(-6.9,0,-1.5);pv.forEach(o=>o.scale.setScalar(1.2));sc.add(pv[0],pv[1])}
+['n1','n2'].forEach(i=>$(i).oninput=preview);
+$('start').onclick=()=>{pv.forEach(o=>sc.remove(o));pv=[];N1=$('n1').value.trim()||'เรา';N2=$('n2').value.trim()||'แฟน';
+me=mk(G[1],G[1]=='f'?0xff8fb8:0x5aa9ff,N1);pa=mk(G[2],G[2]=='f'?0xffb36b:0x7bd88f,N2);
+me.position.set(0,0,-1);pa.position.set(-1.4,0,-.8);sc.add(me,pa);syncScene();
+$('setup').style.display='none';$('hud').style.display=$('pad').style.display='block';quest()};
+function syncScene(){if(!me)return;const now=Date.now(),L=DB.k.filter(r=>!inScene.has(r.id));L.forEach(r=>inScene.add(r.id));
+const old=L.filter(r=>r.d<now-6e4).slice(-Math.max(0,15-stayN)),nw=L.filter(r=>!(r.d<now-6e4));
+old.concat(nw).forEach(r=>{const fr=!(r.d<now-6e4),i=kr.length,z=fr?9.2:13.5-Math.floor((i%15)/5)*.8;if(!fr)stayN++;
+const k=krat(0,-.02,z,r.c,sc,1);k.userData.t=i;k.userData.id=r.id;k.userData.w=r.w;k.userData.a=r.a;k.userData.b=r.b;k.userData.ox=((i%5)-2)*.9;if(!fr)k.userData.stay=1;
+const lb=label('📜 '+(r.w.length>10?r.w.slice(0,10)+'…':r.w));lb.position.y=1.3;lb.scale.set(1.6,.5,1);k.add(lb);kr.push(k)})}
+(async()=>{try{if(!(window.claude&&claude.use))return;
+claude.use('downloads').then(d=>{DL=d}).catch(()=>{});
+const db=await claude.use('db');if(!db)return;const col=db.collection('krathongs');dbc=col;sync='ok';let first=true;
+col.onSnapshot(async s=>{const m=new Map(DB.k.map(r=>[r.id,r])),have=new Set();
+s.docs.forEach(x=>{const r=x.data();have.add(x.id);if(r&&typeof r.w=='string')m.set(x.id,Object.assign({},r,{id:x.id}))});
+DB.k=[...m.values()].sort((a,b)=>(a.d||0)-(b.d||0));ssave();syncScene();
+if(first&&!s.metadata.fromCache){first=false;for(const r of DB.k.filter(r=>!have.has(r.id))){try{await col.doc(r.id).set(r)}catch(e){sync='ro';break}}}},()=>{})
+}catch(e){}})();
+async function savePic(){if(!DL||!pic)return;try{await DL.save({filename:'loy-krathong.jpg',data:pic})}catch(e){}}
+window.snap=()=>{if(!me)return;R.render(sc,cam);const W=R.domElement.width,q=Math.min(1,1080/W),w=Math.round(W*q),h=Math.round(R.domElement.height*q),c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.drawImage(R.domElement,0,0,w,h);
+const L=DB.k[DB.k.length-1],bh=Math.round(w*.26),m=Math.round(w*.04),by=h-bh-m,F=n=>`700 ${Math.round(w*n)}px Mali,sans-serif`;
+x.fillStyle='rgba(255,247,232,.93)';x.beginPath();x.roundRect(m,by,w-2*m,bh,w*.04);x.fill();x.fillStyle='#4a2c5a';x.textAlign='center';
+x.font=F(.055);x.fillText(N1+' 💕 '+N2,w/2,by+bh*.36);
+x.font=F(.042);x.fillText(L?'“'+(L.w.length>30?L.w.slice(0,30)+'…':L.w)+'”':'ลอยกระทงกับแฟน 🌕',w/2,by+bh*.64);
+x.font=F(.03);x.fillText(new Date().toLocaleDateString('th-TH',{day:'numeric',month:'long',year:'numeric'}),w/2,by+bh*.88);
+pic=null;c.toBlob(b=>{pic=b},'image/jpeg',.92);
+say('<h1>📸 รูปของเรา</h1><div id="pic"></div><p><small>'+(DL?'กดปุ่มด้านล่าง หรือ':'')+'กดค้างที่รูปเพื่อบันทึก</small></p>'+(DL?'<button class="go" id="sv">💾 บันทึกรูป</button>':'')+'<button class="go" onclick="shut()">ปิด</button>');
+const im=new Image();im.src=c.toDataURL('image/jpeg',.92);im.style.cssText='max-width:100%;max-height:46vh;border-radius:14px;box-shadow:0 4px 0 #e0a84a';$('pic').appendChild(im);if($('sv'))$('sv').onclick=savePic};
+window.showHist=()=>{const L=DB.k.slice().reverse(),f=d=>{try{return new Date(d).toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'numeric'})}catch(e){return''}};
+say('<h1>📜 กระทงที่เราลอยไว้</h1><p><small>'+SY[sync]+'</small></p>'+(L.length?L.map(r=>`<p style="margin:8px 0;text-align:left">“${esc(r.w)}”<br><small>${esc(r.a||'')} 💕 ${esc(r.b||'')} · ${f(r.d)}</small></p>`).join(''):'<p>ยังไม่ได้ลอยกระทงเลย</p>')+'<button class="go" onclick="shut()">ปิด</button>')};
+function quest(){$('quest').textContent=`ภารกิจ ${Math.min(step+1,3)}/3 : ${Q[step]}`}
+function hearts(n){for(let i=0;i<n;i++){const h=document.createElement('div');h.className='heart';h.textContent=['💕','💖','✨','🌸'][i%4];h.style.left=(10+Math.random()*80)+'%';h.style.animationDelay=Math.random()*.6+'s';document.body.appendChild(h);setTimeout(()=>h.remove(),3200)}}
+function say(html){const m=$('modal');m.innerHTML=html;m.style.display='block'}
+function close(){$('modal').style.display='none'}
+window.shut=close;
+const act=$('act');
+act.onclick=()=>{const z=curZone();if(z<0)return;
+if(z==0){hearts(10);say(`<h1>🙏 ไหว้พระ</h1><p>${N1} และ ${N2} ไหว้พระขอพรด้วยกัน<br>ขอให้รักกันนานๆ 💕</p><button class="go" onclick="shut()">สาธุ ✨</button>`);if(step==0)step=1;quest()}
+else if(z==1){say(`<h1>🪷 ร้านกระทง</h1><p>เลือกกระทงที่ชอบ</p>`+KR.map((k,i)=>`<div class="kr" onclick="pick(${i})">${k.e}<small>${k.n}</small></div>`).join(''))}
+else{say(`<h1>🌉 อธิษฐาน</h1><p>พิมพ์คำอธิษฐานของเรา</p><input id="w" maxlength="40" placeholder="ขอให้เรารักกันตลอดไป..."><button class="go" onclick="floatK()">ลอยกระทง 🌕</button>`)}};
+window.pick=i=>{KC=KR[i].c;hearts(6);close();if(step<2){step=2;quest()}};
+window.floatK=()=>{wish=($('w').value||'ขอให้เรารักกันตลอดไป').trim();close();const k=krat(0,-.05,9.2,KC,sc,1);k.userData.t=0;k.userData.w=wish;k.userData.a=N1;k.userData.b=N2;k.userData.ox=((kr.length%5)-2)*.9;const lb=label('📜 '+(wish.length>10?wish.slice(0,10)+'…':wish));lb.position.y=1.3;lb.scale.set(1.6,.5,1);k.add(lb);kr.push(k);{const rec={id:'k'+Date.now()+Math.random().toString(36).slice(2,6),w:wish,c:KC,a:N1,b:N2,d:Date.now()};inScene.add(rec.id);k.userData.id=rec.id;saveRec(rec)}hearts(18);step=3;quest();
+setTimeout(()=>say(`<h1>🎉 ลอยกระทงสำเร็จ!</h1><p>${N1} 💕 ${N2}<br>“${wish.replace(/</g,'&lt;')}”</p><p>ขอให้คำอธิษฐานเป็นจริงนะ 🌕<br><small>แตะที่กระทงเพื่ออ่านคำอธิษฐานได้ 📜</small></p><button class="go" onclick="shut()">เดินเล่นต่อ</button>`),1400)};
+function curZone(){if(!me)return-1;for(let i=0;i<3;i++){const z=zones[i];if(Math.hypot(me.position.x-z.x,me.position.z-z.z)<z.r){if(i==2&&step<2&&false)return-1;return i}}return-1}
+
+/* input */
+addEventListener('keydown',e=>keys[e.key.toLowerCase()]=1);addEventListener('keyup',e=>keys[e.key.toLowerCase()]=0);
+const pad=$('pad'),kn=$('knob');let pid=null;
+function pm(e){const r=pad.getBoundingClientRect(),dx=e.clientX-(r.left+65),dy=e.clientY-(r.top+65),d=Math.min(Math.hypot(dx,dy),50),a=Math.atan2(dy,dx);
+jv.x=Math.cos(a)*d/50;jv.y=Math.sin(a)*d/50;kn.style.left=40+Math.cos(a)*d+'px';kn.style.top=40+Math.sin(a)*d+'px'}
+pad.onpointerdown=e=>{pid=e.pointerId;pad.setPointerCapture(pid);pm(e)};pad.onpointermove=e=>{if(e.pointerId==pid)pm(e)};
+pad.onpointerup=pad.onpointercancel=()=>{pid=null;jv.x=jv.y=0;kn.style.left=kn.style.top='40px'};
+
+const rc=new THREE.Raycaster(),pt=new THREE.Vector2();
+R.domElement.addEventListener('pointerdown',e=>{if(!kr.length||$('modal').style.display=='block')return;pt.set(e.clientX/innerWidth*2-1,-(e.clientY/innerHeight)*2+1);rc.setFromCamera(pt,cam);const h=rc.intersectObjects(kr,true);if(h.length){let o=h[0].object;while(o&&!o.userData.w)o=o.parent;if(o){hearts(5);say(`<h1>📜 คำอธิษฐานบนกระทง</h1><p style="font-size:20px">“${o.userData.w.replace(/</g,'&lt;')}”</p><p>${esc(o.userData.a||N1)} 💕 ${esc(o.userData.b||N2)}</p><button class="go" onclick="shut()">ปิด</button>`)}}});
+function resize(){const w=innerWidth,h=innerHeight;R.setSize(w,h);cam.aspect=w/h;cam.updateProjectionMatrix()}addEventListener('resize',resize);resize();
+const clk=new THREE.Clock();
+function loop(){requestAnimationFrame(loop);const dt=Math.min(clk.getDelta(),.05),t=clk.elapsedTime;
+water.position.y=-.15+Math.sin(t*1.5)*.03;moon.scale.setScalar(1+Math.sin(t)*.02);
+lan.forEach(l=>{l.position.y+=l.userData.s*dt;l.position.x+=Math.sin(t*.6+l.userData.p)*dt*.4;l.rotation.y+=dt*.3;if(l.position.y>22)l.position.y=2});refl.material.opacity=.8+Math.sin(t*2)*.15;refl.scale.x=1+Math.sin(t*1.3)*.06;
+kr.forEach(k=>{k.userData.t+=dt;if(!k.userData.stay)k.position.z=Math.min(13.5,k.position.z+dt*.35);k.position.x=(k.userData.ox||0)+Math.sin(k.userData.t*.8)*.5;k.position.y=-.02+Math.sin(k.userData.t*3)*.04;k.rotation.y+=dt*.3});
+if(me){let x=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0)+jv.x,z=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0)+jv.y;
+const m=Math.hypot(x,z);if(m>.1&&$('modal').style.display!='block'){if(m>1){x/=m;z/=m}
+let nx=me.position.x+x*5*dt,nz=me.position.z+z*5*dt;nx=Math.max(-16,Math.min(16,nx));nz=Math.max(-10,Math.min(8.8,nz));
+
+if(nz>2.1&&Math.abs(nx)>1.05)nz=2.1;
+if(Math.abs(nx+8)<3&&Math.abs(nz+6)<2.8)nz=me.position.z;
+if(Math.abs(nx-8)<2.4&&Math.abs(nz+3)<1.2)nz=me.position.z;
+me.position.x=nx;me.position.z=nz;me.rotation.y=Math.atan2(x,z);me.position.y=Math.abs(Math.sin(t*12))*.12}else me.position.y=0;
+const dx=me.position.x-pa.position.x-(me.position.x>0?-1.4:1.4)*0,dz=me.position.z-pa.position.z,d=Math.hypot(dx,dz);
+if(d>1.8){const s=Math.min(d-1.8,6*dt);pa.position.x+=dx/d*s;pa.position.z+=dz/d*s;pa.rotation.y=Math.atan2(dx,dz);pa.position.y=Math.abs(Math.sin(t*12))*.12}else{pa.position.y=0;pa.rotation.y=Math.atan2(dx,dz)}
+cam.position.lerp(new THREE.Vector3(me.position.x*.8,innerWidth<innerHeight?9:7,me.position.z+(innerWidth<innerHeight?13:10)),.06);cam.lookAt(me.position.x*.8,1,me.position.z-1);
+const cz=curZone();if(cz>=0&&$('modal').style.display!='block'){act.style.display='block';act.textContent=zones[cz].t}else act.style.display='none'}
+else{const P=innerWidth<innerHeight;cam.position.set(-8,P?2.2:2.6,P?9.5:7);cam.lookAt(-8,P?1.5:1.8,-6);pv.forEach((o,i)=>{o.rotation.y=Math.sin(t*1.5+i)*.45;o.position.y=Math.abs(Math.sin(t*3+i))*.08})}
+R.render(sc,cam)}
+preview();loop();
+</script></body></html>
